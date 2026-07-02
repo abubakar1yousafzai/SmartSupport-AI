@@ -1,0 +1,13 @@
+.env
+data/issues.db
+data/dashboard_data.json
+output/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+issues.db
+dashboard/customer_portal.py
+dashboard/
+dashboard/dashboard.py
+output/report.md

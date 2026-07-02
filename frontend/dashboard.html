@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSupport AI - Business Intelligence Dashboard</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* ─────────────────────────────────────────────────────────
+           1. Core Design System & Theme Variable Declarations
+        ───────────────────────────────────────────────────────── */
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            
+            /* Accent Colors */
+            --blue: #58a6ff;
+            --blue-glow: rgba(88, 166, 255, 0.15);
+            --green: #3fb950;
+            --green-glow: rgba(63, 185, 80, 0.15);
+            --red: #f85149;
+            --red-glow: rgba(248, 81, 73, 0.15);
+            --yellow: #d29922;
+            --yellow-glow: rgba(210, 153, 34, 0.15);
+            --purple: #bc8cff;
+            --purple-glow: rgba(188, 140, 255, 0.15);
+            --orange: #f0883e;
+            
+            --transition-speed: 0.25s;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           2. Base Layout & Typography
+        ───────────────────────────────────────────────────────── */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2rem;
+            flex-grow: 1;
+        }
+
+        /* Loading Spinner Overlay */
+        #global-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--blue) 0%, var(--purple) 50%, var(--green) 100%);
+            background-size: 200% 100%;
+            animation: loadingBar 1.5s infinite linear;
+            z-index: 9999;
+            display: none;
+        }
+
+        @keyframes loadingBar {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           3. Header Section
+        ───────────────────────────────────────────────────────── */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-title-area h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+
+        .header-title-area p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .clock-container {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .clock-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--green);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        .btn-refresh {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .btn-refresh:hover {
+            border-color: var(--blue);
+            box-shadow: 0 0 12px var(--blue-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn-refresh:active {
+            transform: translateY(1px);
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           4. Card Components
+        ───────────────────────────────────────────────────────── */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+        }
+
+        .card:hover {
+            border-color: #484f58;
+        }
+
+        /* Metric Grid Layout */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .metric-card.blue::before { background-color: var(--blue); }
+        .metric-card.red::before { background-color: var(--red); }
+        .metric-card.yellow::before { background-color: var(--yellow); }
+        .metric-card.green::before { background-color: var(--green); }
+
+        .metric-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-val {
+            font-size: 2.25rem;
+            font-weight: 800;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           5. Grid & Content Layout
+        ───────────────────────────────────────────────────────── */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .full-width-grid {
+            grid-column: 1 / -1;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .chart-card {
+            display: flex;
+            flex-direction: column;
+            min-height: 320px;
+        }
+
+        .chart-card h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            height: 250px;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           6. Recurring Alerts Section
+        ───────────────────────────────────────────────────────── */
+        .alerts-section {
+            margin-bottom: 2rem;
+            display: none; /* Only show when alerts are present */
+        }
+
+        .alerts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .alert-card {
+            background: linear-gradient(135deg, #2d1a1a 0%, #161b22 100%);
+            border: 1px solid rgba(248, 81, 73, 0.4);
+            border-left: 4px solid var(--red);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .alert-info h4 {
+            color: #ff7b72;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        .alert-info p {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+        }
+
+        .alert-badge {
+            background-color: var(--red);
+            color: white;
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            box-shadow: 0 0 8px var(--red-glow);
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           7. Business Recommendations Cards
+        ───────────────────────────────────────────────────────── */
+        .recommendations-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .rec-card {
+            background-color: #21262d;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: transform var(--transition-speed) ease;
+        }
+
+        .rec-card:hover {
+            transform: scale(1.01);
+            border-color: #484f58;
+        }
+
+        .rec-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .rec-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .rec-badge.high { background-color: var(--red-glow); color: #ff7b72; border: 1px solid rgba(248, 81, 73, 0.4); }
+        .rec-badge.medium { background-color: var(--yellow-glow); color: #f2cc60; border: 1px solid rgba(210, 153, 34, 0.4); }
+        .rec-badge.low { background-color: var(--green-glow); color: #56d364; border: 1px solid rgba(63, 185, 80, 0.4); }
+
+        .rec-dept {
+            background-color: rgba(88, 166, 255, 0.1);
+            color: var(--blue);
+            border: 1px solid rgba(88, 166, 255, 0.3);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .rec-body {
+            font-size: 0.88rem;
+            color: var(--text-primary);
+        }
+
+        .rec-body strong {
+            display: block;
+            margin-bottom: 0.25rem;
+            color: #c9d1d9;
+            font-size: 0.92rem;
+        }
+
+        .rec-impact {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        /* Empty state styling */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            padding: 3rem 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+            gap: 0.5rem;
+        }
+
+        .empty-state-icon {
+            font-size: 2rem;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           8. Issue Management Table
+        ───────────────────────────────────────────────────────── */
+        .table-card {
+            margin-top: 2rem;
+            overflow: hidden;
+        }
+
+        .table-header-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .table-header-area h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        th {
+            background-color: #1f242c;
+            color: #c9d1d9;
+            font-weight: 600;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: #c9d1d9;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.015);
+        }
+
+        /* Badges inside Table */
+        .badge-priority {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .badge-priority.high { background-color: var(--red-glow); color: #ff7b72; border: 1px solid rgba(248, 81, 73, 0.3); }
+        .badge-priority.medium { background-color: var(--yellow-glow); color: #f2cc60; border: 1px solid rgba(210, 153, 34, 0.3); }
+        .badge-priority.low { background-color: var(--green-glow); color: #56d364; border: 1px solid rgba(63, 185, 80, 0.3); }
+
+        .select-status {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            outline: none;
+            cursor: pointer;
+            transition: border-color var(--transition-speed) ease;
+        }
+
+        .select-status:focus {
+            border-color: var(--blue);
+        }
+
+        .btn-update {
+            background-color: var(--blue);
+            color: #0d1117;
+            border: none;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background-color var(--transition-speed) ease, opacity var(--transition-speed) ease;
+        }
+
+        .btn-update:hover {
+            background-color: #79c0ff;
+        }
+
+        .btn-update:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .td-complaint {
+            max-width: 320px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .td-complaint:hover {
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           9. Footer & Responsive Design
+        ───────────────────────────────────────────────────────── */
+        footer {
+            margin-top: auto;
+            padding: 2rem 0;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .full-width-grid {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Loading Bar -->
+    <div id="global-loader"></div>
+
+    <div class="container">
+        <!-- 1. Header Section -->
+        <header>
+            <div class="header-title-area">
+                <h1>SmartSupport AI</h1>
+                <p>Business Intelligence Dashboard</p>
+            </div>
+            <div class="header-actions">
+                <div class="clock-container">
+                    <span class="clock-dot"></span>
+                    <span id="live-clock">--:--:--</span>
+                </div>
+                <button class="btn-refresh" onclick="refreshAllData()">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                        <path d="M8 4.4a.5.5 0 0 1 .5.5v2.5a.5.5 0 0 1-.5.5H5.5a.5.5 0 0 1 0-1H7.5V4.9a.5.5 0 0 1 .5-.5z"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- 7. Recurring Alerts (Conditional) -->
+        <section class="alerts-section" id="recurring-alerts-section">
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: #ff7b72;">⚠️ Recurring Issue Alerts</h3>
+            <div class="alerts-grid" id="alerts-container">
+                <!-- Dynamically populated alert cards -->
+            </div>
+        </section>
+
+        <!-- 2. Metric Cards Row -->
+        <section class="metrics-grid">
+            <div class="card metric-card blue">
+                <span class="metric-label">Total Issues</span>
+                <span class="metric-val" id="metric-total">0</span>
+            </div>
+            <div class="card metric-card red">
+                <span class="metric-label">Open Issues</span>
+                <span class="metric-val" id="metric-open">0</span>
+            </div>
+            <div class="card metric-card yellow">
+                <span class="metric-label">In Progress</span>
+                <span class="metric-val" id="metric-progress">0</span>
+            </div>
+            <div class="card metric-card green">
+                <span class="metric-label">Resolved</span>
+                <span class="metric-val" id="metric-resolved">0</span>
+            </div>
+        </section>
+
+        <!-- Main Grid for Charts & Recommendations -->
+        <div class="dashboard-grid">
+            <!-- Left Side: Charts -->
+            <div class="charts-container">
+                <!-- Sentiment Trend Chart -->
+                <div class="card chart-card">
+                    <h3>
+                        <span style="display:inline-block; width:10px; height:10px; background:var(--purple); border-radius:50%;"></span>
+                        Sentiment Trend
+                    </h3>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-sentiment"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Complaints Chart -->
+                <div class="card chart-card">
+                    <h3>
+                        <span style="display:inline-block; width:10px; height:10px; background:var(--orange); border-radius:50%;"></span>
+                        Top Complaint Categories
+                    </h3>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-complaints"></canvas>
+                    </div>
+                </div>
+
+                <!-- Daily Issue Volume (Full Width in Left Side grid) -->
+                <div class="card chart-card" style="grid-column: span 2;">
+                    <h3>
+                        <span style="display:inline-block; width:10px; height:10px; background:var(--blue); border-radius:50%;"></span>
+                        Daily Issue Volume
+                    </h3>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-daily-volume"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Business Recommendations -->
+            <div class="card chart-card">
+                <h3>💡 Business Recommendations</h3>
+                <div class="recommendations-container" id="recommendations-container">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💤</div>
+                        <p>No recommendations available.</p>
+                        <p style="font-size:0.75rem;">Pipeline needs to process active issues.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Issue Management Table -->
+        <section class="card table-card">
+            <div class="table-header-area">
+                <h3>📋 Active Issue Management</h3>
+                <span style="font-size:0.8rem; color:var(--text-secondary);" id="active-table-count">Showing 0 active issues</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">ID</th>
+                            <th style="width: 140px;">Category</th>
+                            <th style="width: 100px;">Priority</th>
+                            <th>Complaint Text</th>
+                            <th style="width: 130px;">Status</th>
+                            <th style="width: 100px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="issues-table-body">
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">🎉</div>
+                                    <p>No active issues to display.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>SmartSupport AI Dashboard &bull; Live Updates &bull; Powered by FastAPI & Gemini 2.5 Flash</p>
+    </footer>
+
+    <!-- Script / Logic -->
+    <script>
+        // API Base configuration
+        const API_BASE = "http://localhost:8000";
+
+        // Global Chart Instance variables to destroy/recreate correctly
+        let chartSentimentInstance = null;
+        let chartComplaintsInstance = null;
+        let chartDailyVolumeInstance = null;
+
+        // ─────────────────────────────────────────────
+        // Live Clock Implementation
+        // ─────────────────────────────────────────────
+        function startLiveClock() {
+            const clockEl = document.getElementById("live-clock");
+            setInterval(() => {
+                const now = new Date();
+                clockEl.textContent = now.toLocaleTimeString([], { hour12: false });
+            }, 1000);
+            
+            // Set initial value immediately
+            clockEl.textContent = new Date().toLocaleTimeString([], { hour12: false });
+        }
+
+        // ─────────────────────────────────────────────
+        // Global Loader functions
+        // ─────────────────────────────────────────────
+        function showLoading() {
+            document.getElementById("global-loader").style.display = "block";
+        }
+
+        function hideLoading() {
+            document.getElementById("global-loader").style.display = "none";
+        }
+
+        // ─────────────────────────────────────────────
+        // Core Fetching & Rendering Methods
+        // ─────────────────────────────────────────────
+        async function fetchJSON(endpoint) {
+            const response = await fetch(`${API_BASE}${endpoint}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        }
+
+        // POST status update
+        async function updateIssueStatus(issueId, newStatus, buttonElement) {
+            showLoading();
+            if (buttonElement) buttonElement.disabled = true;
+            try {
+                const response = await fetch(`${API_BASE}/api/update-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        issue_id: parseInt(issueId),
+                        status: newStatus
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    // Instantly refresh all data to sync visual components
+                    await refreshAllData();
+                } else {
+                    alert(`Failed to update issue status: ${result.message}`);
+                }
+            } catch (error) {
+                console.error("Error updating status:", error);
+                alert(`Error updating issue: ${error.message}`);
+            } finally {
+                hideLoading();
+                if (buttonElement) buttonElement.disabled = false;
+            }
+        }
+
+        // Main Refresh aggregator
+        async function refreshAllData() {
+            showLoading();
+            try {
+                // Execute fetches concurrently
+                const [issues, dashboard, repeatIssues] = await Promise.all([
+                    fetchJSON("/api/issues"),
+                    fetchJSON("/api/dashboard"),
+                    fetchJSON("/api/repeat-issues")
+                ]);
+
+                // Render components
+                renderMetricCards(issues);
+                renderRecurringAlerts(repeatIssues);
+                renderCharts(issues, dashboard);
+                renderRecommendations(dashboard);
+                renderIssuesTable(issues);
+
+            } catch (error) {
+                console.error("Error updating dashboard data:", error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // Rendering Specific Components
+        // ─────────────────────────────────────────────
+
+        // Metric Cards Rendering
+        function renderMetricCards(issues) {
+            const total = issues.length;
+            const open = issues.filter(i => i.status === 'Open').length;
+            const progress = issues.filter(i => i.status === 'In Progress').length;
+            const resolved = issues.filter(i => i.status === 'Resolved').length;
+
+            document.getElementById("metric-total").textContent = total;
+            document.getElementById("metric-open").textContent = open;
+            document.getElementById("metric-progress").textContent = progress;
+            document.getElementById("metric-resolved").textContent = resolved;
+        }
+
+        // Recurring Alerts rendering
+        function renderRecurringAlerts(repeatIssues) {
+            const section = document.getElementById("recurring-alerts-section");
+            const container = document.getElementById("alerts-container");
+            
+            if (!repeatIssues || repeatIssues.length === 0) {
+                section.style.display = "none";
+                container.innerHTML = "";
+                return;
+            }
+
+            section.style.display = "block";
+            container.innerHTML = repeatIssues.map(item => `
+                <div class="alert-card">
+                    <div class="alert-info">
+                        <h4>🔥 Category: ${escapeHTML(item.category)}</h4>
+                        <p>Multiple complaints flagged in this sector. Requires review.</p>
+                    </div>
+                    <div class="alert-badge">${item.issue_count} Issues</div>
+                </div>
+            `).join("");
+        }
+
+        // Business Recommendations rendering
+        function renderRecommendations(dashboard) {
+            const container = document.getElementById("recommendations-container");
+            
+            const recommendations = dashboard.insight_data?.recommendations || [];
+            
+            if (recommendations.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💤</div>
+                        <p>No business recommendations available.</p>
+                        <p style="font-size:0.75rem;">Run the orchestrator pipeline to populate insights.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = recommendations.map(rec => {
+                const priorityClass = (rec.priority || "").toLowerCase();
+                return `
+                    <div class="rec-card">
+                        <div class="rec-header">
+                            <span class="rec-badge ${priorityClass}">${escapeHTML(rec.priority)} Priority</span>
+                            <span class="rec-dept">${escapeHTML(rec.department)}</span>
+                        </div>
+                        <div class="rec-body">
+                            <strong>Issue ID: Rank ${rec.rank} &bull; ${escapeHTML(rec.issue)}</strong>
+                            <p>${escapeHTML(rec.action)}</p>
+                        </div>
+                        <div class="rec-impact">
+                            🚀 <strong>Impact:</strong> ${escapeHTML(rec.expected_impact)}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // Issue Management Table rendering (Open & In Progress issues only)
+        function renderIssuesTable(issues) {
+            const tbody = document.getElementById("issues-table-body");
+            const tableCountSpan = document.getElementById("active-table-count");
+            
+            const activeIssues = issues.filter(i => i.status === 'Open' || i.status === 'In Progress');
+            tableCountSpan.textContent = `Showing ${activeIssues.length} active issues`;
+
+            if (activeIssues.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🎉</div>
+                                <p>No active issues to display.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = activeIssues.map(issue => {
+                const priorityClass = (issue.priority || "").toLowerCase();
+                const isOpen = issue.status === 'Open';
+                const isInProgress = issue.status === 'In Progress';
+                
+                return `
+                    <tr>
+                        <td style="font-weight:700; color:var(--blue);">#${issue.issue_id}</td>
+                        <td><span style="background-color:rgba(255,255,255,0.05); padding:0.2rem 0.5rem; border-radius:4px; font-size:0.8rem;">${escapeHTML(issue.category)}</span></td>
+                        <td><span class="badge-priority ${priorityClass}">${escapeHTML(issue.priority)}</span></td>
+                        <td class="td-complaint" title="${escapeHTML(issue.complaint_text)}">${escapeHTML(issue.complaint_text)}</td>
+                        <td>
+                            <select class="select-status" id="status-select-${issue.issue_id}">
+                                <option value="Open" ${isOpen ? 'selected' : ''}>Open</option>
+                                <option value="In Progress" ${isInProgress ? 'selected' : ''}>In Progress</option>
+                                <option value="Resolved">Resolved</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn-update" onclick="handleStatusUpdate(${issue.issue_id}, this)">Update</button>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function handleStatusUpdate(issueId, btn) {
+            const select = document.getElementById(`status-select-${issueId}`);
+            if (select) {
+                updateIssueStatus(issueId, select.value, btn);
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // Charts Implementation (Chart.js Configs)
+        // ─────────────────────────────────────────────
+        function renderCharts(issues, dashboard) {
+            // 1. Sentiment Trend Chart
+            renderSentimentChart(dashboard);
+
+            // 2. Top Complaints Chart
+            renderComplaintsChart(dashboard);
+
+            // 3. Daily Issue Volume Chart
+            renderDailyVolumeChart(issues);
+        }
+
+        function renderSentimentChart(dashboard) {
+            const ctx = document.getElementById('chart-sentiment').getContext('2d');
+            const monthlyData = dashboard.sentiment_data?.monthly_summary || [];
+            
+            // Fallback empty datasets if no data exists
+            const labels = monthlyData.map(m => m.month) || [];
+            const data = monthlyData.map(m => m.average_score) || [];
+
+            if (chartSentimentInstance) chartSentimentInstance.destroy();
+
+            // Create purple gradient for background fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight || 250);
+            gradient.addColorStop(0, 'rgba(188, 140, 255, 0.2)'); // #bc8cff33
+            gradient.addColorStop(1, 'rgba(188, 140, 255, 0)');
+
+            chartSentimentInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Sentiment (0-100)',
+                        data: data,
+                        borderColor: '#bc8cff',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#bc8cff',
+                        pointBorderColor: '#0d1117',
+                        pointHoverRadius: 8,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#161b22', titleColor: '#fff', bodyColor: '#8b949e', borderColor: '#30363d', borderWidth: 1 }
+                    },
+                    scales: {
+                        x: { grid: { display: true, color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } },
+                        y: { beginAtZero: true, grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } }
+                    }
+                },
+                plugins: [{
+                    id: 'sentimentArrows',
+                    afterDatasetsDraw(chart) {
+                        const {ctx} = chart;
+                        chart.data.datasets.forEach((dataset, datasetIndex) => {
+                            const meta = chart.getDatasetMeta(datasetIndex);
+                            meta.data.forEach((point, index) => {
+                                if (index === 0) return;
+                                const prev = dataset.data[index - 1];
+                                const curr = dataset.data[index];
+                                if (prev === undefined || curr === undefined) return;
+                                
+                                ctx.save();
+                                ctx.font = 'bold 12px Inter, sans-serif';
+                                ctx.textAlign = 'center';
+                                
+                                if (curr > prev) {
+                                    ctx.fillStyle = '#3fb950'; // green
+                                    ctx.textBaseline = 'bottom';
+                                    ctx.fillText('▲', point.x, point.y - 6);
+                                } else if (curr < prev) {
+                                    ctx.fillStyle = '#f85149'; // red
+                                    ctx.textBaseline = 'top';
+                                    ctx.fillText('▼', point.x, point.y + 6);
+                                }
+                                ctx.restore();
+                            });
+                        });
+                    }
+                }]
+            });
+        }
+
+        function renderComplaintsChart(dashboard) {
+            const ctx = document.getElementById('chart-complaints').getContext('2d');
+            const complaints = dashboard.complaint_data?.top_complaints || [];
+
+            const labels = complaints.map(c => c.category) || [];
+            const data = complaints.map(c => c.count) || [];
+
+            if (chartComplaintsInstance) chartComplaintsInstance.destroy();
+
+            chartComplaintsInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Mentions',
+                        data: data,
+                        backgroundColor: 'rgba(240, 136, 62, 0.75)',
+                        borderColor: '#f0883e',
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#161b22', titleColor: '#fff', bodyColor: '#8b949e', borderColor: '#30363d', borderWidth: 1 }
+                    },
+                    scales: {
+                        x: { grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } },
+                        y: { grid: { display: false }, ticks: { color: '#f0f6fc', font: { family: 'Inter', weight: 'bold' } } }
+                    }
+                }
+            });
+        }
+
+        function renderDailyVolumeChart(issues) {
+            const ctx = document.getElementById('chart-daily-volume').getContext('2d');
+            
+            // Extract dates from issues created_at field (Format YYYY-MM-DD HH:MM:SS)
+            const dailyCounts = {};
+            issues.forEach(issue => {
+                if (issue.created_at) {
+                    const datePart = issue.created_at.split(" ")[0];
+                    dailyCounts[datePart] = (dailyCounts[datePart] || 0) + 1;
+                }
+            });
+
+            // Sort dates chronologically
+            const sortedDates = Object.keys(dailyCounts).sort();
+            const data = sortedDates.map(d => dailyCounts[d]);
+
+            if (chartDailyVolumeInstance) chartDailyVolumeInstance.destroy();
+
+            // Create blue gradient for background fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight || 250);
+            gradient.addColorStop(0, 'rgba(88, 166, 255, 0.2)'); // #58a6ff33
+            gradient.addColorStop(1, 'rgba(88, 166, 255, 0)');
+
+            chartDailyVolumeInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'New Issues',
+                        data: data,
+                        borderColor: '#58a6ff',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#58a6ff',
+                        pointBorderColor: '#0d1117',
+                        pointHoverRadius: 8,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#161b22', titleColor: '#fff', bodyColor: '#8b949e', borderColor: '#30363d', borderWidth: 1 }
+                    },
+                    scales: {
+                        x: { grid: { display: true, color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } },
+                        y: { beginAtZero: true, grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } }
+                    }
+                },
+                plugins: [{
+                    id: 'volumeArrows',
+                    afterDatasetsDraw(chart) {
+                        const {ctx} = chart;
+                        chart.data.datasets.forEach((dataset, datasetIndex) => {
+                            const meta = chart.getDatasetMeta(datasetIndex);
+                            meta.data.forEach((point, index) => {
+                                if (index === 0) return;
+                                const prev = dataset.data[index - 1];
+                                const curr = dataset.data[index];
+                                if (prev === undefined || curr === undefined) return;
+                                
+                                ctx.save();
+                                ctx.font = 'bold 12px Inter, sans-serif';
+                                ctx.textAlign = 'center';
+                                
+                                if (curr > prev) {
+                                    ctx.fillStyle = '#3fb950'; // green
+                                    ctx.textBaseline = 'bottom';
+                                    ctx.fillText('▲', point.x, point.y - 6);
+                                } else if (curr < prev) {
+                                    ctx.fillStyle = '#f85149'; // red
+                                    ctx.textBaseline = 'top';
+                                    ctx.fillText('▼', point.x, point.y + 6);
+                                }
+                                ctx.restore();
+                            });
+                        });
+                    }
+                }]
+            });
+        }
+
+        // Shared chart configurations
+        function getChartDefaults(yLabel) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: '#161b22', titleColor: '#fff', bodyColor: '#8b949e', borderColor: '#30363d', borderWidth: 1 }
+                },
+                scales: {
+                    x: { grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } },
+                    y: { grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } }
+                }
+            };
+        }
+
+        // HTML escaping utility
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        // ─────────────────────────────────────────────
+        // App Lifecycle Initialization
+        // ─────────────────────────────────────────────
+        document.addEventListener("DOMContentLoaded", () => {
+            // 1. Start live clock
+            startLiveClock();
+
+            // 2. Fetch and render all data
+            refreshAllData();
+
+            // 3. Schedule auto refresh every 30 seconds
+            setInterval(refreshAllData, 30000);
+        });
+    </script>
+</body>
+</html>
