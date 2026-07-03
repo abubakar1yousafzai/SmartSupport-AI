@@ -90,6 +90,17 @@
             font-weight: 500;
         }
 
+        /* Session indicator – tiny muted text shown below the subtitle */
+        .session-indicator {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-top: 0.15rem;
+            opacity: 0.65;
+            letter-spacing: 0.01em;
+            font-family: 'Inter', monospace;
+        }
+
         .link-dashboard {
             color: var(--blue);
             text-decoration: none;
@@ -401,6 +412,8 @@
             <div class="header-title-area">
                 <h1>SmartSupport AI</h1>
                 <p>Customer Support Portal</p>
+                <!-- Session indicator: populated by initSession() on page load -->
+                <div class="session-indicator" id="session-indicator">Session: initializing…</div>
             </div>
             <a href="/" class="link-dashboard">
                 Business Dashboard &rarr;
@@ -436,9 +449,55 @@
         const complaintInput = document.getElementById("complaint-input");
         const btnSubmit = document.getElementById("btn-submit");
         const emptyState = document.getElementById("empty-state");
+        const sessionIndicator = document.getElementById("session-indicator");
 
         // Client-side chat history
         const chatHistory = [];
+
+        // ── Session Management ──────────────────────────────────────────────────
+        // A session groups all conversation turns for a single customer visit.
+        // The ID is persisted in localStorage so the session survives page
+        // refreshes within the same browser.  A fresh session is created via
+        // GET /api/session when none is found in storage.
+
+        /** Holds the active session ID; populated by initSession() on load. */
+        let currentSessionId = null;
+
+        /**
+         * Retrieves (or creates) a session ID.
+         *  1. Checks localStorage for an existing session.
+         *  2. If not found, calls GET /api/session to generate a new one and
+         *     stores it in localStorage for future page loads.
+         * @returns {Promise<string>} The resolved session ID.
+         */
+        async function initSession() {
+            // Re-use an existing session from a previous page load
+            let sessionId = localStorage.getItem('smartsupport_session');
+
+            if (!sessionId) {
+                // No stored session – request a brand-new one from the server
+                const response = await fetch(`${API_BASE}/api/session`);
+                const data = await response.json();
+                sessionId = data.session_id;
+                // Persist so the same session is reused on refresh
+                localStorage.setItem('smartsupport_session', sessionId);
+            }
+
+            return sessionId;
+        }
+
+        // Initialise the session as soon as the page finishes loading
+        window.addEventListener('load', async () => {
+            try {
+                currentSessionId = await initSession();
+                // Show a shortened version of the session ID in the header
+                sessionIndicator.textContent = `Session: ${currentSessionId}`;
+            } catch (err) {
+                // Non-critical – the app still works; session linking just won't happen
+                console.warn('Session init failed:', err);
+                sessionIndicator.textContent = 'Session: unavailable';
+            }
+        });
 
         // Auto grow textarea as user types
         function autoGrow(element) {
@@ -549,7 +608,12 @@
                 const response = await fetch(`${API_BASE}/api/submit-issue-stream`, {
                     method:  "POST",
                     headers: { "Content-Type": "application/json" },
-                    body:    JSON.stringify({ complaint_text: text }),
+                    // Include session_id so the server can link this message to the
+                    // conversation history and persist it in the conversations table.
+                    body:    JSON.stringify({
+                        complaint_text: text,
+                        session_id:     currentSessionId,
+                    }),
                 });
 
                 if (!response.ok) {

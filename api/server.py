@@ -47,6 +47,10 @@ from mcp_tools.data_tool import (
     get_repeat_issues,
     update_issue_status,
     save_issue,
+    # Session / conversation management tools (new)
+    create_session,
+    get_conversation_history,
+    save_conversation_message,
 )
 from orchestrator.orchestrator_agent import run_pipeline
 
@@ -86,10 +90,28 @@ class UpdateStatusRequest(BaseModel):
 
 class SubmitIssueRequest(BaseModel):
     complaint_text: str
+    # Optional session tracking fields (new)
+    session_id: str = None        # Session ID from GET /api/session
+    is_followup: bool = False     # True when customer is replying to a previous answer
 
 # ─────────────────────────────────────────────
 # Step 6: Endpoints
 # ─────────────────────────────────────────────
+
+@app.get("/api/session")
+def get_session():
+    """
+    Creates a new conversation session and returns its unique session_id.
+
+    The session_id must be sent back in every subsequent
+    POST /api/submit-issue-stream request so the server can link
+    conversation turns and issues together.
+
+    Returns:
+        dict: {"session_id": "sess_xxxxxxxx"}
+    """
+    session_id = create_session()
+    return {"session_id": session_id}
 
 @app.get("/api/issues")
 def get_issues():
@@ -238,21 +260,61 @@ async def submit_issue_stream(payload: SubmitIssueRequest, background_tasks: Bac
       2. 'token'   events  – reply text word-by-word with a 30 ms delay between each word
       3. 'done'    event   – issue_id after the record is persisted to SQLite
 
+    Conversation context (new):
+      - If payload.session_id is provided, the full conversation history for that
+        session is fetched and prepended to the complaint before calling the agent.
+      - The customer message and agent reply are saved back to the conversations table.
+      - The saved issue is linked to the session via session_id.
+
     If escalate=True, run_pipeline() is triggered as a background task after streaming ends.
     """
 
     async def event_generator():
         try:
-            # ── 1. Draft the full support reply ─────────────────────────────
-            reply_dict = await draft_support_reply(payload.complaint_text)
+            # Unpack request fields for convenience
+            complaint_text = payload.complaint_text
+            session_id     = payload.session_id      # may be None
+
+            # ── Step A: Fetch conversation history for this session ───────────
+            # Only attempted when the caller passes a session_id.
+            history = None
+            if session_id:
+                history_raw = get_conversation_history(session_id)
+                history = json.loads(history_raw)
+
+            # ── Step B: Build complaint text enriched with conversation context ─
+            # When prior turns exist we prepend them so the agent has full context.
+            if history and len(history.get("messages", [])) > 0:
+                context = "[CONVERSATION HISTORY]\n"
+                for msg in history["messages"]:
+                    role = "Customer" if msg["role"] == "customer" else "Agent"
+                    context += f"{role}: {msg['message']}\n"
+
+                # If the last issue is still waiting on the customer and they are
+                # replying, signal to the agent that the previous fix didn't work.
+                last_issue = history.get("last_issue")
+                if last_issue and last_issue["status"] == "Pending Customer Action":
+                    context += "\n[CURRENT SITUATION]\n"
+                    context += f"Previous issue #{last_issue['issue_id']} "
+                    context += f"was marked '{last_issue['status']}'\n"
+                    context += "Customer is following up — previous fix did NOT work.\n"
+                    context += "Classify as: followup_unresolved\n"
+
+                complaint_with_context = f"{context}\n[NEW MESSAGE]\nCustomer: {complaint_text}"
+            else:
+                # No prior history – treat as a fresh complaint
+                complaint_with_context = complaint_text
+
+            # ── Step C: Call the AI agent with the enriched complaint ─────────
+            reply_dict = await draft_support_reply(complaint_with_context)
             if "error" in reply_dict:
                 # Surface the error as an SSE error event so the client can react
                 error_payload = json.dumps({"type": "error", "message": reply_dict["error"]})
                 yield f"data: {error_payload}\n\n"
                 return
 
-            agent_reply  = reply_dict.get("draft_reply", "Thank you for reaching out.")
-            category     = reply_dict.get("suggested_department", "General").strip()
+            agent_reply_text = reply_dict.get("draft_reply", "Thank you for reaching out.")
+            category         = reply_dict.get("suggested_department", "General").strip()
 
             # Map tone → human-readable sentiment
             tone = reply_dict.get("tone", "").strip()
@@ -266,7 +328,7 @@ async def submit_issue_stream(payload: SubmitIssueRequest, background_tasks: Bac
             status    = reply_dict.get("status", "Open")
             escalate  = reply_dict.get("escalate") is True
 
-            # ── 2. Stream metadata first ─────────────────────────────────────
+            # ── 1. Stream metadata first ──────────────────────────────────────
             metadata_payload = json.dumps({
                 "type":      "metadata",
                 "category":  category,
@@ -277,22 +339,28 @@ async def submit_issue_stream(payload: SubmitIssueRequest, background_tasks: Bac
             })
             yield f"data: {metadata_payload}\n\n"
 
-            # ── 3. Stream reply text word-by-word ────────────────────────────
-            words = agent_reply.split()
+            # ── Step D: Persist the customer's raw message to conversations ───
+            # Saved BEFORE streaming the reply so the DB is updated promptly.
+            if session_id:
+                save_conversation_message(session_id, "customer", complaint_text)
+
+            # ── 2. Stream reply text word-by-word ─────────────────────────────
+            words = agent_reply_text.split()
             for word in words:
                 token_payload = json.dumps({"type": "token", "word": word})
                 yield f"data: {token_payload}\n\n"
                 # Small delay for a smooth typewriter effect (30 ms)
                 await asyncio.sleep(0.03)
 
-            # ── 4. Persist issue to SQLite then stream issue_id ──────────────
+            # ── Step E: Persist issue to SQLite (now linked to the session) ───
             save_result = save_issue(
-                complaint_text=payload.complaint_text,
-                agent_reply=agent_reply,
+                complaint_text=complaint_text,
+                agent_reply=agent_reply_text,
                 category=category,
                 sentiment=sentiment,
                 priority=priority,
                 status=status,
+                session_id=session_id,   # links issue ↔ session
             )
             save_data = json.loads(save_result)
             issue_id  = save_data.get("issue_id")
@@ -300,7 +368,16 @@ async def submit_issue_stream(payload: SubmitIssueRequest, background_tasks: Bac
             done_payload = json.dumps({"type": "done", "issue_id": issue_id})
             yield f"data: {done_payload}\n\n"
 
-            # ── 5. Background pipeline if escalation is required ─────────────
+            # ── Step F: Persist agent reply to conversations ──────────────────
+            if session_id:
+                save_conversation_message(
+                    session_id,
+                    "agent",
+                    agent_reply_text,
+                    issue_id=issue_id,
+                )
+
+            # ── 3. Background pipeline if escalation is required ──────────────
             if escalate:
                 background_tasks.add_task(run_pipeline)
 
