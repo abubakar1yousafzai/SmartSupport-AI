@@ -514,7 +514,10 @@
             return false;
         }
 
-        // Main Submit Flow
+        // ─── Main Submit Flow (Streaming via SSE) ─────────────────────────────────
+        // Uses fetch() + ReadableStream instead of EventSource because the endpoint
+        // is a POST (EventSource only supports GET).  We manually parse the
+        // "data: {...}\n\n" SSE framing on the client side.
         async function submitComplaint() {
             const text = complaintInput.value.trim();
             if (!text) return;
@@ -529,81 +532,184 @@
                 emptyState.style.display = "none";
             }
 
-            // 1. Render Customer Bubble
+            // ── Step 1: Render the customer's message bubble immediately ────────────
             renderCustomerBubble(text);
 
-            // 2. Show Typing indicator
+            // ── Step 2: Show typing indicator while the AI is thinking ──────────────
             showTypingIndicator();
 
+            // Variables that will be populated by incoming SSE events
+            let streamedMetadata = null;   // filled by the "metadata" event
+            let agentBubble      = null;   // <div class="bubble agent"> element
+            let agentBubbleRow   = null;   // the full message-row wrapping element
+            let agentTextBuffer  = "";     // accumulates words as tokens arrive
+
             try {
-                // 3. POST issue to API
-                const response = await fetch(`${API_BASE}/api/submit-issue`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ complaint_text: text })
+                // ── Step 3: Open the SSE stream with a POST fetch ────────────────────
+                const response = await fetch(`${API_BASE}/api/submit-issue-stream`, {
+                    method:  "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body:    JSON.stringify({ complaint_text: text }),
                 });
 
                 if (!response.ok) {
                     throw new Error(`API error: ${response.status}`);
                 }
 
-                const data = await response.json();
-                hideTypingIndicator();
+                // ── Step 4: Read the response body as a stream of text chunks ────────
+                const reader  = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let   buffer  = "";   // accumulates partial SSE frames across chunks
 
-                // 4. Retrieve status / mapping details by fetching issue payload details
-                // Wait! Since API returns only agent_reply and issue_id directly:
-                // We should fetch the full details of this issue or fetch active-issues to retrieve its details
-                // Let's call /api/issues to retrieve category, sentiment, priority for the matched issue_id
-                let category = "General";
-                let sentiment = "Neutral";
-                let priority = "Medium";
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
 
-                try {
-                    const issuesRes = await fetch(`${API_BASE}/api/issues`);
-                    if (issuesRes.ok) {
-                        const allIssues = await issuesRes.json();
-                        const matchingIssue = allIssues.find(i => i.issue_id === data.issue_id);
-                        if (matchingIssue) {
-                            category = matchingIssue.category;
-                            sentiment = matchingIssue.sentiment;
-                            priority = matchingIssue.priority;
+                    // Append newly arrived bytes (decoded) to our running SSE buffer
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // SSE frames are separated by double-newlines (\n\n).
+                    // Split on them so we handle one complete frame at a time.
+                    const frames = buffer.split("\n\n");
+
+                    // The last element may be an incomplete frame – keep it for the
+                    // next iteration; everything before it is a complete frame.
+                    buffer = frames.pop();
+
+                    for (const frame of frames) {
+                        // Each frame may have multiple lines; grab the "data:" line.
+                        const dataLine = frame
+                            .split("\n")
+                            .find(l => l.startsWith("data:"));
+                        if (!dataLine) continue;
+
+                        let event;
+                        try {
+                            event = JSON.parse(dataLine.slice("data:".length).trim());
+                        } catch {
+                            // Malformed JSON – skip this frame
+                            continue;
+                        }
+
+                        // ── Handle "metadata" event ──────────────────────────────────
+                        // Arrives first, before any token events.
+                        // We store it and use it later when "done" arrives.
+                        if (event.type === "metadata") {
+                            streamedMetadata = event;
+
+                            // Hide typing dots now that the AI has started replying
+                            hideTypingIndicator();
+
+                            // Create an empty agent bubble that words will be typed into
+                            agentBubbleRow = document.createElement("div");
+                            agentBubbleRow.className = "message-row agent";
+
+                            const wrapper = document.createElement("div");
+                            wrapper.className = "bubble-wrapper";
+
+                            const label = document.createElement("div");
+                            label.className = "bubble-label";
+                            label.textContent = "Support Agent";
+
+                            agentBubble = document.createElement("div");
+                            agentBubble.className = "bubble agent";
+                            agentBubble.textContent = "";   // starts empty
+
+                            wrapper.appendChild(label);
+                            wrapper.appendChild(agentBubble);
+                            agentBubbleRow.appendChild(wrapper);
+                            chatBox.appendChild(agentBubbleRow);
+                            scrollToBottom();
+                        }
+
+                        // ── Handle "token" event ─────────────────────────────────────
+                        // Each token is one word.  Append it to the live bubble so the
+                        // user sees the reply being "typed out" in real time.
+                        else if (event.type === "token") {
+                            if (!agentBubble) {
+                                // Safety: bubble wasn't created yet (metadata event late).
+                                // Create it now so words don't get dropped.
+                                hideTypingIndicator();
+                                agentBubbleRow = document.createElement("div");
+                                agentBubbleRow.className = "message-row agent";
+                                const w = document.createElement("div");
+                                w.className = "bubble-wrapper";
+                                const lbl = document.createElement("div");
+                                lbl.className = "bubble-label";
+                                lbl.textContent = "Support Agent";
+                                agentBubble = document.createElement("div");
+                                agentBubble.className = "bubble agent";
+                                w.appendChild(lbl);
+                                w.appendChild(agentBubble);
+                                agentBubbleRow.appendChild(w);
+                                chatBox.appendChild(agentBubbleRow);
+                            }
+
+                            // Append word with a leading space (except before the first word)
+                            agentTextBuffer += (agentTextBuffer.length ? " " : "") + event.word;
+                            agentBubble.textContent = agentTextBuffer;
+
+                            // Keep the chat scrolled to the newest content
+                            scrollToBottom();
+                        }
+
+                        // ── Handle "done" event ──────────────────────────────────────
+                        // Emitted after SQLite save; carries the new issue_id.
+                        // At this point we finalise the UI.
+                        else if (event.type === "done") {
+                            const issueId  = event.issue_id;
+                            const meta     = streamedMetadata || {};
+                            const escalate = meta.escalate === true;
+
+                            // Add follow-up nudge for non-escalated issues beneath the bubble
+                            if (!escalate && agentBubbleRow) {
+                                const nudge = document.createElement("div");
+                                nudge.style.cssText = "font-size:0.78rem; color:var(--text-secondary); margin-top:0.35rem; padding-left:0.25rem; font-style:italic;";
+                                nudge.textContent = "💬 Reply below if this doesn't resolve your issue — we'll escalate it immediately.";
+                                agentBubbleRow.querySelector(".bubble-wrapper").appendChild(nudge);
+                            }
+
+                            // Show metadata chip row
+                            renderMetadataCard(
+                                meta.category  || "General",
+                                meta.sentiment || "Neutral",
+                                meta.priority  || "Medium",
+                                issueId,
+                                meta.status    || "Open",
+                                escalate,
+                            );
+
+                            // Check if the category is recurring and show a banner if so
+                            const isRecurring = await checkCategoryRecurring(meta.category || "General");
+                            if (isRecurring) {
+                                renderRecurringAlert();
+                            }
+
+                            // Persist to local chat history array
+                            chatHistory.push({
+                                customer:    text,
+                                agent:       agentTextBuffer,
+                                issueId,
+                                category:    meta.category  || "General",
+                                sentiment:   meta.sentiment || "Neutral",
+                                priority:    meta.priority  || "Medium",
+                                isRecurring,
+                                escalate,
+                                status:      meta.status    || "Open",
+                            });
+                        }
+
+                        // ── Handle "error" event ─────────────────────────────────────
+                        else if (event.type === "error") {
+                            hideTypingIndicator();
+                            renderAgentBubble("Sorry, I encountered an issue processing your request. Please try again later.");
                         }
                     }
-                } catch (e) {
-                    console.warn("Could not retrieve issue metadata details:", e);
                 }
-
-                // 5. Render Agent Bubble (with optional follow-up note for non-escalated)
-                const escalate = data.escalate === true;
-                const issueStatus = data.status || (escalate ? "Open" : "Pending Customer Action");
-                renderAgentBubble(data.agent_reply, escalate);
-
-                // 6. Render Metadata Chip Row
-                renderMetadataCard(category, sentiment, priority, data.issue_id, issueStatus, escalate);
-
-                // 7. Check if recurring
-                const isRecurring = await checkCategoryRecurring(category);
-                if (isRecurring) {
-                    renderRecurringAlert();
-                }
-
-                // Save to history array
-                chatHistory.push({
-                    customer: text,
-                    agent: data.agent_reply,
-                    issueId: data.issue_id,
-                    category,
-                    sentiment,
-                    priority,
-                    isRecurring,
-                    escalate,
-                    status: issueStatus
-                });
 
             } catch (error) {
-                console.error(error);
+                // Network-level or parsing error – show a generic error bubble
+                console.error("Streaming error:", error);
                 hideTypingIndicator();
                 renderAgentBubble("Sorry, I encountered an issue submitting your request. Please try again later.");
             }

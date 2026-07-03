@@ -36,7 +36,7 @@ if GEMINI_API_KEY:
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 # Import project modules
@@ -225,7 +225,102 @@ async def submit_issue(payload: SubmitIssueRequest, background_tasks: Background
         raise HTTPException(status_code=500, detail=f"Failed to submit issue: {str(e)}")
 
 # ─────────────────────────────────────────────
-# Step 7: Main Entry Point
+# Step 7: Streaming Endpoint (SSE)
+# ─────────────────────────────────────────────
+
+@app.post("/api/submit-issue-stream")
+async def submit_issue_stream(payload: SubmitIssueRequest, background_tasks: BackgroundTasks):
+    """
+    Streaming endpoint for customer complaint submission using Server-Sent Events (SSE).
+
+    Stream order:
+      1. 'metadata' event  – classification details (category, sentiment, priority, etc.)
+      2. 'token'   events  – reply text word-by-word with a 30 ms delay between each word
+      3. 'done'    event   – issue_id after the record is persisted to SQLite
+
+    If escalate=True, run_pipeline() is triggered as a background task after streaming ends.
+    """
+
+    async def event_generator():
+        try:
+            # ── 1. Draft the full support reply ─────────────────────────────
+            reply_dict = await draft_support_reply(payload.complaint_text)
+            if "error" in reply_dict:
+                # Surface the error as an SSE error event so the client can react
+                error_payload = json.dumps({"type": "error", "message": reply_dict["error"]})
+                yield f"data: {error_payload}\n\n"
+                return
+
+            agent_reply  = reply_dict.get("draft_reply", "Thank you for reaching out.")
+            category     = reply_dict.get("suggested_department", "General").strip()
+
+            # Map tone → human-readable sentiment
+            tone = reply_dict.get("tone", "").strip()
+            sentiment_mapping = {
+                "Empathetic":  "Negative",
+                "Apologetic":  "Negative",
+                "Informative": "Neutral",
+            }
+            sentiment = sentiment_mapping.get(tone, "Neutral")
+            priority  = reply_dict.get("priority", "Medium")
+            status    = reply_dict.get("status", "Open")
+            escalate  = reply_dict.get("escalate") is True
+
+            # ── 2. Stream metadata first ─────────────────────────────────────
+            metadata_payload = json.dumps({
+                "type":      "metadata",
+                "category":  category,
+                "sentiment": sentiment,
+                "priority":  priority,
+                "escalate":  escalate,
+                "status":    status,
+            })
+            yield f"data: {metadata_payload}\n\n"
+
+            # ── 3. Stream reply text word-by-word ────────────────────────────
+            words = agent_reply.split()
+            for word in words:
+                token_payload = json.dumps({"type": "token", "word": word})
+                yield f"data: {token_payload}\n\n"
+                # Small delay for a smooth typewriter effect (30 ms)
+                await asyncio.sleep(0.03)
+
+            # ── 4. Persist issue to SQLite then stream issue_id ──────────────
+            save_result = save_issue(
+                complaint_text=payload.complaint_text,
+                agent_reply=agent_reply,
+                category=category,
+                sentiment=sentiment,
+                priority=priority,
+                status=status,
+            )
+            save_data = json.loads(save_result)
+            issue_id  = save_data.get("issue_id")
+
+            done_payload = json.dumps({"type": "done", "issue_id": issue_id})
+            yield f"data: {done_payload}\n\n"
+
+            # ── 5. Background pipeline if escalation is required ─────────────
+            if escalate:
+                background_tasks.add_task(run_pipeline)
+
+        except Exception as e:
+            # Yield a terminal error event so the client can display a message
+            error_payload = json.dumps({"type": "error", "message": str(e)})
+            yield f"data: {error_payload}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            # Prevent intermediate proxies / browsers from buffering the stream
+            "Cache-Control":    "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+# ─────────────────────────────────────────────
+# Step 8: Main Entry Point
 # ─────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
