@@ -3,7 +3,7 @@
 <div align="center">
 
 # SmartSupport AI
-### Multi-Agent Customer Support & Business Intelligence Platform
+### B2B Multi-Agent Customer Support & Business Intelligence Platform
 
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-1.3.0-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://google.github.io/adk-docs/)
@@ -25,31 +25,33 @@
 
 ## 🎯 Problem Statement
 
-Businesses receive hundreds of customer complaints daily but lack 
-the tools to:
-- Identify **recurring patterns** before they become crises
-- Analyze **sentiment trends** over time
-- Automatically **escalate critical issues** to the right team
-- Generate **actionable recommendations** from complaint data
+Modern SaaS companies receive hundreds or even thousands of customer support requests, reviews, and bug reports every day. As customer volume grows, manually reviewing every conversation becomes slow, inconsistent, and expensive. This makes it difficult for support and product teams to identify recurring issues, understand customer sentiment, prioritize engineering work, and respond quickly to emerging problems.
 
-Manual review is slow, inconsistent, and expensive. Support teams 
-spend hours reading complaints instead of fixing problems.
+Businesses need an intelligent system that can automatically analyze customer conversations, detect recurring complaint patterns, monitor sentiment trends over time, escalate critical issues when necessary, and generate actionable business recommendations. Without these capabilities, valuable customer insights are often missed, leading to slower decision-making, reduced customer satisfaction, and increased operational costs.
+
+SmartSupport AI solves this challenge by using a multi-agent architecture to automate customer support, continuously analyze customer feedback in real time, and transform customer conversations into actionable business intelligence through an interactive analytics dashboard.
 
 ---
 
 ## 💡 Solution
 
-**SmartSupport AI** is a production-ready multi-agent system that:
+**SmartSupport AI** is a production-ready **B2B Multi-Agent Customer Support & Customer Intelligence Platform** built with **Google ADK, MCP, and Gemini**.
 
-- 🤖 **Intelligently classifies** every complaint — self-fixable vs technical escalation
-- 📊 **Analyzes patterns** across all customer issues automatically
-- 🚨 **Alerts business teams** when issues become recurring
-- 💬 **Drafts empathetic replies** instantly for support agents
-- 📈 **Generates business recommendations** prioritized by impact
+The platform transforms customer conversations into actionable business insights by combining intelligent support automation with real-time analytics.
 
-> "Instead of a human reading 500 complaints, 
->  6 AI agents analyze them in seconds and tell 
->  you exactly what to fix first."
+It enables businesses to:
+
+- 🤖 Automatically classify customer issues and determine whether they can be resolved instantly or require technical escalation.
+- 💬 Generate professional, empathetic support responses to improve customer experience.
+- 📊 Detect recurring complaint patterns before they become major business problems.
+- 😊 Analyze customer sentiment and monitor trends over time.
+- 📈 Generate prioritized business recommendations that help product and support teams focus on the highest-impact issues.
+- 📉 Visualize insights through an interactive dashboard with complaint trends, sentiment analytics, and business KPIs.
+
+> Instead of manually reviewing hundreds of customer conversations, 
+> SmartSupport AI enables six specialized AI agents to analyze issues in 
+> seconds and provide clear, actionable insights for faster business 
+> decisions.
 
 ---
 
