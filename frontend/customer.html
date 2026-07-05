@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,8 @@
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         /* ─────────────────────────────────────────────────────────
            1. Core Design System & Theme Variable Declarations
@@ -18,7 +20,7 @@
             --border-color: #30363d;
             --text-primary: #f0f6fc;
             --text-secondary: #8b949e;
-            
+
             /* Accent Colors */
             --blue: #58a6ff;
             --blue-glow: rgba(88, 166, 255, 0.15);
@@ -29,7 +31,7 @@
             --yellow: #d29922;
             --yellow-glow: rgba(210, 153, 34, 0.15);
             --purple: #bc8cff;
-            
+
             --transition-speed: 0.2s;
         }
 
@@ -134,9 +136,11 @@
         .chat-window::-webkit-scrollbar {
             width: 6px;
         }
+
         .chat-window::-webkit-scrollbar-track {
             background: transparent;
         }
+
         .chat-window::-webkit-scrollbar-thumb {
             background: var(--border-color);
             border-radius: 3px;
@@ -162,8 +166,15 @@
         }
 
         @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
         }
 
         /* Chat Bubbles */
@@ -254,12 +265,35 @@
             color: #c9d1d9;
         }
 
-        .meta-chip.priority-high { border-color: rgba(248, 81, 73, 0.4); color: #ff7b72; background: var(--red-glow); }
-        .meta-chip.priority-medium { border-color: rgba(210, 153, 34, 0.4); color: #f2cc60; background: var(--yellow-glow); }
-        .meta-chip.priority-low { border-color: rgba(63, 185, 80, 0.4); color: #56d364; background: var(--green-glow); }
-        .meta-chip.sentiment-negative { color: #ff7b72; }
-        .meta-chip.sentiment-positive { color: #56d364; }
-        .meta-chip.sentiment-neutral { color: #8b949e; }
+        .meta-chip.priority-high {
+            border-color: rgba(248, 81, 73, 0.4);
+            color: #ff7b72;
+            background: var(--red-glow);
+        }
+
+        .meta-chip.priority-medium {
+            border-color: rgba(210, 153, 34, 0.4);
+            color: #f2cc60;
+            background: var(--yellow-glow);
+        }
+
+        .meta-chip.priority-low {
+            border-color: rgba(63, 185, 80, 0.4);
+            color: #56d364;
+            background: var(--green-glow);
+        }
+
+        .meta-chip.sentiment-negative {
+            color: #ff7b72;
+        }
+
+        .meta-chip.sentiment-positive {
+            color: #56d364;
+        }
+
+        .meta-chip.sentiment-neutral {
+            color: #8b949e;
+        }
 
         /* ─────────────────────────────────────────────────────────
            6. Recurring Alert Banner
@@ -303,12 +337,27 @@
             animation: wave 1.2s infinite;
         }
 
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
 
         @keyframes wave {
-            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-            30% { transform: translateY(-4px); opacity: 1; }
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+
+            30% {
+                transform: translateY(-4px);
+                opacity: 1;
+            }
         }
 
         /* ─────────────────────────────────────────────────────────
@@ -394,16 +443,29 @@
 
         /* Animations */
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -415,9 +477,6 @@
                 <!-- Session indicator: populated by initSession() on page load -->
                 <div class="session-indicator" id="session-indicator">Session: initializing…</div>
             </div>
-            <a href="/" class="link-dashboard">
-                Business Dashboard &rarr;
-            </a>
         </header>
 
         <!-- 2. Chat Window Area -->
@@ -433,10 +492,11 @@
         <!-- 5. Input Area -->
         <footer class="input-container">
             <div class="input-row">
-                <textarea id="complaint-input" placeholder="Describe your issue..." rows="1" oninput="autoGrow(this)" onkeydown="handleKeyPress(event)"></textarea>
+                <textarea id="complaint-input" placeholder="Describe your issue..." rows="1" oninput="autoGrow(this)"
+                    onkeydown="handleKeyPress(event)"></textarea>
                 <button class="btn-send" id="btn-submit" onclick="submitComplaint()" disabled>
                     <svg viewBox="0 0 24 24">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                     </svg>
                 </button>
             </div>
@@ -503,7 +563,7 @@
         function autoGrow(element) {
             element.style.height = "24px";
             element.style.height = (element.scrollHeight - 6) + "px";
-            
+
             // Enable/disable send button based on input content
             btnSubmit.disabled = !element.value.trim();
         }
@@ -519,7 +579,7 @@
         // Escape HTML tags to protect layout
         function escapeHTML(str) {
             if (!str) return '';
-            return str.replace(/[&<>'"]/g, 
+            return str.replace(/[&<>'"]/g,
                 tag => ({
                     '&': '&amp;',
                     '<': '&lt;',
@@ -560,7 +620,7 @@
             try {
                 const response = await fetch(`${API_BASE}/api/repeat-issues`);
                 if (!response.ok) return false;
-                
+
                 const repeats = await response.json();
                 if (Array.isArray(repeats)) {
                     // Check if current category has 2 or more reports
@@ -599,20 +659,20 @@
 
             // Variables that will be populated by incoming SSE events
             let streamedMetadata = null;   // filled by the "metadata" event
-            let agentBubble      = null;   // <div class="bubble agent"> element
-            let agentBubbleRow   = null;   // the full message-row wrapping element
-            let agentTextBuffer  = "";     // accumulates words as tokens arrive
+            let agentBubble = null;   // <div class="bubble agent"> element
+            let agentBubbleRow = null;   // the full message-row wrapping element
+            let agentTextBuffer = "";     // accumulates words as tokens arrive
 
             try {
                 // ── Step 3: Open the SSE stream with a POST fetch ────────────────────
                 const response = await fetch(`${API_BASE}/api/submit-issue-stream`, {
-                    method:  "POST",
+                    method: "POST",
                     headers: { "Content-Type": "application/json" },
                     // Include session_id so the server can link this message to the
                     // conversation history and persist it in the conversations table.
-                    body:    JSON.stringify({
+                    body: JSON.stringify({
                         complaint_text: text,
-                        session_id:     currentSessionId,
+                        session_id: currentSessionId,
                     }),
                 });
 
@@ -621,9 +681,9 @@
                 }
 
                 // ── Step 4: Read the response body as a stream of text chunks ────────
-                const reader  = response.body.getReader();
+                const reader = response.body.getReader();
                 const decoder = new TextDecoder("utf-8");
-                let   buffer  = "";   // accumulates partial SSE frames across chunks
+                let buffer = "";   // accumulates partial SSE frames across chunks
 
                 while (true) {
                     const { value, done } = await reader.read();
@@ -721,8 +781,8 @@
                         // Emitted after SQLite save; carries the new issue_id.
                         // At this point we finalise the UI.
                         else if (event.type === "done") {
-                            const issueId  = event.issue_id;
-                            const meta     = streamedMetadata || {};
+                            const issueId = event.issue_id;
+                            const meta = streamedMetadata || {};
                             const escalate = meta.escalate === true;
 
                             // Add follow-up nudge for non-escalated issues beneath the bubble
@@ -735,11 +795,11 @@
 
                             // Show metadata chip row
                             renderMetadataCard(
-                                meta.category  || "General",
+                                meta.category || "General",
                                 meta.sentiment || "Neutral",
-                                meta.priority  || "Medium",
+                                meta.priority || "Medium",
                                 issueId,
-                                meta.status    || "Open",
+                                meta.status || "Open",
                                 escalate,
                             );
 
@@ -751,15 +811,15 @@
 
                             // Persist to local chat history array
                             chatHistory.push({
-                                customer:    text,
-                                agent:       agentTextBuffer,
+                                customer: text,
+                                agent: agentTextBuffer,
                                 issueId,
-                                category:    meta.category  || "General",
-                                sentiment:   meta.sentiment || "Neutral",
-                                priority:    meta.priority  || "Medium",
+                                category: meta.category || "General",
+                                sentiment: meta.sentiment || "Neutral",
+                                priority: meta.priority || "Medium",
                                 isRecurring,
                                 escalate,
-                                status:      meta.status    || "Open",
+                                status: meta.status || "Open",
                             });
                         }
 
@@ -818,7 +878,7 @@
         function renderMetadataCard(category, sentiment, priority, issueId, status, escalate) {
             const card = document.createElement("div");
             card.className = "metadata-card";
-            
+
             const pClass = (priority || 'medium').toLowerCase();
             const sClass = (sentiment || 'neutral').toLowerCase();
             const sentimentEmoji = sentiment === "Positive" ? "😊" : (sentiment === "Negative" ? "😞" : "😐");
@@ -858,4 +918,5 @@
         }
     </script>
 </body>
+
 </html>
