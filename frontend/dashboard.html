@@ -653,36 +653,58 @@
         <div class="dashboard-grid">
             <!-- Left Side: Charts -->
             <div class="charts-container">
-                <!-- Sentiment Trend Chart -->
+                <!-- Sentiment Trend Chart — purple gradient line chart -->
                 <div class="card chart-card">
+                    <!-- Chart header row: title + indicator dot -->
                     <h3>
-                        <span style="display:inline-block; width:10px; height:10px; background:var(--purple); border-radius:50%;"></span>
+                        <span style="display:inline-block; width:10px; height:10px; background:#a371f7; border-radius:50%;"></span>
                         Sentiment Trend
                     </h3>
-                    <div class="chart-wrapper">
-                        <canvas id="chart-sentiment"></canvas>
+                    <!-- Dark canvas wrapper with rounded corners and padding -->
+                    <div style="background:#0d1117; border-radius:12px; padding:20px; flex-grow:1; display:flex; flex-direction:column;">
+                        <div class="chart-wrapper">
+                            <canvas id="chart-sentiment"></canvas>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Top Complaints Chart -->
+                <!-- Top Complaints Chart — purple horizontal bar chart -->
                 <div class="card chart-card">
+                    <!-- Chart header row: title + indicator dot -->
                     <h3>
-                        <span style="display:inline-block; width:10px; height:10px; background:var(--orange); border-radius:50%;"></span>
+                        <span style="display:inline-block; width:10px; height:10px; background:#a371f7; border-radius:50%;"></span>
                         Top Complaint Categories
                     </h3>
-                    <div class="chart-wrapper">
-                        <canvas id="chart-complaints"></canvas>
+                    <!-- Dark canvas wrapper with rounded corners and padding -->
+                    <div style="background:#0d1117; border-radius:12px; padding:20px; flex-grow:1; display:flex; flex-direction:column;">
+                        <div class="chart-wrapper">
+                            <canvas id="chart-complaints"></canvas>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Daily Issue Volume (Full Width in Left Side grid) -->
+                <!-- Daily Issue Volume — full-width purple gradient line chart -->
                 <div class="card chart-card" style="grid-column: span 2;">
-                    <h3>
-                        <span style="display:inline-block; width:10px; height:10px; background:var(--blue); border-radius:50%;"></span>
-                        Daily Issue Volume
-                    </h3>
-                    <div class="chart-wrapper">
-                        <canvas id="chart-daily-volume"></canvas>
+                    <!-- Title row: chart label on left, "7 Days" filter badge on right -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h3 style="font-size:16px; color:#ffffff; font-weight:600; margin:0;">
+                            Daily Issue Volume
+                        </h3>
+                        <!-- Visual-only time-range badge (non-functional) -->
+                        <button
+                            id="daily-volume-range-btn"
+                            disabled
+                            style="background:#1c2333; border:1px solid #30363d; color:#8b949e;
+                                   border-radius:8px; padding:4px 12px; font-size:12px;
+                                   font-family:'Inter',sans-serif; cursor:default;">
+                            7 Days
+                        </button>
+                    </div>
+                    <!-- Dark canvas wrapper with rounded corners and padding -->
+                    <div style="background:#0d1117; border-radius:12px; padding:20px; flex-grow:1; display:flex; flex-direction:column;">
+                        <div class="chart-wrapper">
+                            <canvas id="chart-daily-volume"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -987,20 +1009,24 @@
             renderDailyVolumeChart(issues);
         }
 
+        // ─────────────────────────────────────────────────────────────────
+        // Sentiment Trend Chart — Purple gradient line, matching Daily Volume
+        // ─────────────────────────────────────────────────────────────────
         function renderSentimentChart(dashboard) {
             const ctx = document.getElementById('chart-sentiment').getContext('2d');
             const monthlyData = dashboard.sentiment_data?.monthly_summary || [];
-            
-            // Fallback empty datasets if no data exists
+
+            // --- Existing data-fetching logic (unchanged) ---
             const labels = monthlyData.map(m => m.month) || [];
             const data = monthlyData.map(m => m.average_score) || [];
 
+            // Destroy previous instance to avoid canvas reuse errors
             if (chartSentimentInstance) chartSentimentInstance.destroy();
 
-            // Create purple gradient for background fill
+            // Build top→bottom purple gradient fill
             const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight || 250);
-            gradient.addColorStop(0, 'rgba(188, 140, 255, 0.2)'); // #bc8cff33
-            gradient.addColorStop(1, 'rgba(188, 140, 255, 0)');
+            gradient.addColorStop(0, 'rgba(163, 113, 247, 0.3)');  // top  — #a371f7 @ 30%
+            gradient.addColorStop(1, 'rgba(163, 113, 247, 0.0)');  // bottom — transparent
 
             chartSentimentInstance = new Chart(ctx, {
                 type: 'line',
@@ -1009,15 +1035,18 @@
                     datasets: [{
                         label: 'Average Sentiment (0-100)',
                         data: data,
-                        borderColor: '#bc8cff',
+                        // --- Purple line ---
+                        borderColor: '#a371f7',
                         backgroundColor: gradient,
-                        borderWidth: 3,
-                        tension: 0.4,
+                        borderWidth: 2.5,
+                        tension: 0.3,          // slightly smooth curve
                         fill: true,
-                        pointBackgroundColor: '#bc8cff',
-                        pointBorderColor: '#0d1117',
-                        pointHoverRadius: 8,
-                        pointRadius: 4
+                        // --- Styled data points ---
+                        pointBackgroundColor: '#a371f7',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 9
                     }]
                 },
                 options: {
@@ -1025,13 +1054,46 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        tooltip: { backgroundColor: '#161b22', titleColor: '#fff', bodyColor: '#8b949e', borderColor: '#30363d', borderWidth: 1 }
+                        tooltip: {
+                            backgroundColor: '#1c2333',
+                            titleColor: '#a371f7',
+                            bodyColor: '#ffffff',
+                            borderColor: '#a371f7',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false
+                        }
                     },
                     scales: {
-                        x: { grid: { display: true, color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } },
-                        y: { beginAtZero: true, grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } }
-                    }
+                        x: {
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)',
+                                drawBorder: false
+                            },
+                            ticks: { color: '#8b949e', font: { size: 12 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#8b949e',
+                                font: { size: 12 },
+                                // Compact large numbers (e.g. 1000 → 1K)
+                                callback: function(value) {
+                                    if (value >= 1000) return (value / 1000) + 'K';
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    // Tooltip follows index, not exact cursor position
+                    interaction: { intersect: false, mode: 'index' },
+                    animation: { duration: 1000, easing: 'easeInOutQuart' }
                 },
+                // Preserve existing sentiment-arrow plugin (up/down trend indicators)
                 plugins: [{
                     id: 'sentimentArrows',
                     afterDatasetsDraw(chart) {
@@ -1043,17 +1105,17 @@
                                 const prev = dataset.data[index - 1];
                                 const curr = dataset.data[index];
                                 if (prev === undefined || curr === undefined) return;
-                                
+
                                 ctx.save();
                                 ctx.font = 'bold 12px Inter, sans-serif';
                                 ctx.textAlign = 'center';
-                                
+
                                 if (curr > prev) {
-                                    ctx.fillStyle = '#3fb950'; // green
+                                    ctx.fillStyle = '#3fb950'; // green arrow — positive
                                     ctx.textBaseline = 'bottom';
                                     ctx.fillText('▲', point.x, point.y - 6);
                                 } else if (curr < prev) {
-                                    ctx.fillStyle = '#f85149'; // red
+                                    ctx.fillStyle = '#f85149'; // red arrow — negative
                                     ctx.textBaseline = 'top';
                                     ctx.fillText('▼', point.x, point.y + 6);
                                 }
@@ -1065,14 +1127,25 @@
             });
         }
 
+        // ─────────────────────────────────────────────────────────────────
+        // Top Complaints Chart — Horizontal purple gradient bars
+        // ─────────────────────────────────────────────────────────────────
         function renderComplaintsChart(dashboard) {
             const ctx = document.getElementById('chart-complaints').getContext('2d');
             const complaints = dashboard.complaint_data?.top_complaints || [];
 
+            // --- Existing data-fetching logic (unchanged) ---
             const labels = complaints.map(c => c.category) || [];
             const data = complaints.map(c => c.count) || [];
 
+            // Destroy previous instance before recreating
             if (chartComplaintsInstance) chartComplaintsInstance.destroy();
+
+            // Build left→right purple gradient for horizontal bars
+            const chartWidth = ctx.canvas.clientWidth || 300;
+            const barGradient = ctx.createLinearGradient(0, 0, chartWidth, 0);
+            barGradient.addColorStop(0, 'rgba(163, 113, 247, 0.85)'); // left  — #a371f7
+            barGradient.addColorStop(1, 'rgba(192, 132, 252, 0.60)'); // right — #c084fc lighter
 
             chartComplaintsInstance = new Chart(ctx, {
                 type: 'bar',
@@ -1081,81 +1154,155 @@
                     datasets: [{
                         label: 'Mentions',
                         data: data,
-                        backgroundColor: 'rgba(240, 136, 62, 0.75)',
-                        borderColor: '#f0883e',
+                        // Purple gradient bar fill
+                        backgroundColor: barGradient,
+                        // Hover highlight — brighter purple
+                        hoverBackgroundColor: '#c084fc',
+                        borderColor: '#a371f7',
                         borderWidth: 1.5,
-                        borderRadius: 6,
+                        borderRadius: 6
                     }]
                 },
                 options: {
+                    // Horizontal bars (indexAxis: 'y' keeps existing orientation)
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        tooltip: { backgroundColor: '#161b22', titleColor: '#fff', bodyColor: '#8b949e', borderColor: '#30363d', borderWidth: 1 }
+                        tooltip: {
+                            backgroundColor: '#1c2333',
+                            titleColor: '#a371f7',
+                            bodyColor: '#ffffff',
+                            borderColor: '#a371f7',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false
+                        }
                     },
                     scales: {
-                        x: { grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } },
-                        y: { grid: { display: false }, ticks: { color: '#f0f6fc', font: { family: 'Inter', weight: 'bold' } } }
-                    }
+                        x: {
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)',
+                                drawBorder: false
+                            },
+                            ticks: { color: '#8b949e', font: { size: 12 } }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#f0f6fc', font: { size: 12, weight: 'bold' } }
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' },
+                    animation: { duration: 1000, easing: 'easeInOutQuart' }
                 }
             });
         }
 
+        // ─────────────────────────────────────────────────────────────────
+        // Daily Issue Volume Chart — Purple gradient line chart
+        // ─────────────────────────────────────────────────────────────────
         function renderDailyVolumeChart(issues) {
             const ctx = document.getElementById('chart-daily-volume').getContext('2d');
-            
-            // Extract dates from issues created_at field (Format YYYY-MM-DD HH:MM:SS)
+
+            // --- Existing data-fetching logic (unchanged) ---
+            // Aggregate issue counts per calendar date from created_at timestamps
             const dailyCounts = {};
             issues.forEach(issue => {
                 if (issue.created_at) {
-                    const datePart = issue.created_at.split(" ")[0];
+                    // created_at format: "YYYY-MM-DD HH:MM:SS" — extract date part only
+                    const datePart = issue.created_at.split(' ')[0];
                     dailyCounts[datePart] = (dailyCounts[datePart] || 0) + 1;
                 }
             });
 
-            // Sort dates chronologically
+            // Sort dates chronologically before plotting
             const sortedDates = Object.keys(dailyCounts).sort();
             const data = sortedDates.map(d => dailyCounts[d]);
 
+            // Destroy any existing instance to avoid canvas reuse errors
             if (chartDailyVolumeInstance) chartDailyVolumeInstance.destroy();
 
-            // Create blue gradient for background fill
-            const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight || 250);
-            gradient.addColorStop(0, 'rgba(88, 166, 255, 0.2)'); // #58a6ff33
-            gradient.addColorStop(1, 'rgba(88, 166, 255, 0)');
+            // Build top→bottom purple gradient fill beneath the line
+            const canvasHeight = ctx.canvas.clientHeight || 250;
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+            gradient.addColorStop(0, 'rgba(163, 113, 247, 0.3)');  // top  — #a371f7 @ 30%
+            gradient.addColorStop(1, 'rgba(163, 113, 247, 0.0)');  // bottom — transparent
 
             chartDailyVolumeInstance = new Chart(ctx, {
+                // 1. Chart type
                 type: 'line',
+
                 data: {
                     labels: sortedDates,
                     datasets: [{
                         label: 'New Issues',
                         data: data,
-                        borderColor: '#58a6ff',
-                        backgroundColor: gradient,
-                        borderWidth: 2,
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#58a6ff',
-                        pointBorderColor: '#0d1117',
-                        pointHoverRadius: 8,
-                        pointRadius: 4
+
+                        // 2. Dataset styling — purple line + gradient fill
+                        borderColor: '#a371f7',            // purple line
+                        backgroundColor: gradient,          // gradient fill below line
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#a371f7',   // filled purple dot
+                        pointBorderColor: '#ffffff',        // white ring around dot
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 9,
+                        tension: 0.3,                       // slight Bezier curve smoothing
+                        fill: true                          // enable gradient fill
                     }]
                 },
+
+                // 3. Chart options
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
+                        // Hide dataset legend label
                         legend: { display: false },
-                        tooltip: { backgroundColor: '#161b22', titleColor: '#fff', bodyColor: '#8b949e', borderColor: '#30363d', borderWidth: 1 }
+                        // Custom dark tooltip with purple accent
+                        tooltip: {
+                            backgroundColor: '#1c2333',
+                            titleColor: '#a371f7',
+                            bodyColor: '#ffffff',
+                            borderColor: '#a371f7',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false
+                        }
                     },
                     scales: {
-                        x: { grid: { display: true, color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } },
-                        y: { beginAtZero: true, grid: { color: '#21262d' }, ticks: { color: '#8b949e', font: { family: 'Inter' } } }
-                    }
+                        x: {
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)',  // very subtle grid lines
+                                drawBorder: false
+                            },
+                            ticks: { color: '#8b949e', font: { size: 12 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#8b949e',
+                                font: { size: 12 },
+                                // Compact large numbers: 1000 → 1K
+                                callback: function(value) {
+                                    if (value >= 1000) return (value / 1000) + 'K';
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    // Tooltip follows the nearest index column, not exact cursor point
+                    interaction: { intersect: false, mode: 'index' },
+                    // Smooth entrance animation
+                    animation: { duration: 1000, easing: 'easeInOutQuart' }
                 },
+
+                // Preserve existing volume-arrow plugin (up/down trend indicators)
                 plugins: [{
                     id: 'volumeArrows',
                     afterDatasetsDraw(chart) {
@@ -1163,21 +1310,21 @@
                         chart.data.datasets.forEach((dataset, datasetIndex) => {
                             const meta = chart.getDatasetMeta(datasetIndex);
                             meta.data.forEach((point, index) => {
-                                if (index === 0) return;
+                                if (index === 0) return; // skip first point — no prev to compare
                                 const prev = dataset.data[index - 1];
                                 const curr = dataset.data[index];
                                 if (prev === undefined || curr === undefined) return;
-                                
+
                                 ctx.save();
                                 ctx.font = 'bold 12px Inter, sans-serif';
                                 ctx.textAlign = 'center';
-                                
+
                                 if (curr > prev) {
-                                    ctx.fillStyle = '#3fb950'; // green
+                                    ctx.fillStyle = '#3fb950'; // green arrow — volume rising
                                     ctx.textBaseline = 'bottom';
                                     ctx.fillText('▲', point.x, point.y - 6);
                                 } else if (curr < prev) {
-                                    ctx.fillStyle = '#f85149'; // red
+                                    ctx.fillStyle = '#f85149'; // red arrow — volume falling
                                     ctx.textBaseline = 'top';
                                     ctx.fillText('▼', point.x, point.y + 6);
                                 }
