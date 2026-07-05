@@ -56,24 +56,10 @@ It enables businesses to:
 ---
 
 ## 🏗️ Architecture
-Customer Portal (chat)          Business Dashboard
-↓                              ↑
-Customer types issue           Team manages issues
-↓                              ↑
-[Support Agent - ADK]          [Issue Management]
-Classifies: self_fixable               ↑
-or technical_escalation                ↑
-↓ (if escalate=true)           ↑
-[SQLite Database]  ←── MCP Tools ─────┘
-↓
-[Orchestrator Agent - ADK]
-↓ (parallel)
-[Complaint    [Sentiment   [Trend      [Insight
-Identifier]   Analyzer]   Analyzer]   Reporter]
-↓
-[dashboard_data.json]
-↓
-[Business Dashboard - Charts + Recommendations]
+
+![SmartSupport AI Architecture](docs/architecture.png)
+
+<div align="center">
 
 ---
 
