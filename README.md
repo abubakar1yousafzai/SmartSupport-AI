@@ -59,8 +59,6 @@ It enables businesses to:
 
 ![SmartSupport AI Architecture](docs/architecture.png)
 
-<div align="center">
-
 ---
 
 ## 🤖 Agents (Google ADK + Gemini 2.5 Flash)
