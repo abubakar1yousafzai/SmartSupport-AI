@@ -131,6 +131,8 @@ Business dashboard updated
 ---
 
 ## 📁 Project Structure
+
+```
 customer_insight_agent/
 ├── .env                          # API keys (not in git)
 ├── requirements.txt              # Dependencies
@@ -152,7 +154,7 @@ customer_insight_agent/
 ├── data/
 │   └── issues.db                 # SQLite database
 └── README.md
-
+```
 ---
 
 ## ⚙️ Setup
