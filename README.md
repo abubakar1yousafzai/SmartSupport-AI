@@ -78,12 +78,15 @@ It enables businesses to:
 
 | Tool | Purpose |
 |---|---|
-| `save_issue()` | Save customer issue to SQLite |
-| `fetch_all_issues()` | Retrieve all issues |
-| `fetch_active_issues()` | Get only Open/In Progress issues |
-| `update_issue_status()` | Mark as Resolved/In Progress |
-| `get_repeat_issues()` | Detect recurring complaints |
-| `save_dashboard_data()` | Save analysis results for dashboard |
+| `save_issue()` | Save customer issue to SQLite with session ID |
+| `fetch_all_issues()` | Retrieve all issues from database |
+| `fetch_active_issues()` | Get only Open/In Progress issues for analysis |
+| `update_issue_status()` | Mark issue as Resolved/In Progress + timestamp |
+| `get_repeat_issues()` | Detect recurring complaints by category |
+| `save_dashboard_data()` | Save agent analysis results for dashboard |
+| `create_session()` | Generate unique session ID for conversation tracking |
+| `get_conversation_history()` | Retrieve full conversation history by  session |
+| `save_conversation_message()` | Save each customer/agent message to database |
 
 ---
 
