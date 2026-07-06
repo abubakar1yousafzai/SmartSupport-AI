@@ -17,7 +17,7 @@
 **Kaggle 5-Day AI Agents Intensive — Capstone Project**
 **Track: Agents for Business**
 
-[🚀 Live Demo](#setup) • [📹 Video](#video-demo) • [🏗️ Architecture](#architecture) • [⚙️ Setup](#setup)
+• [📹 Video](#video-demo) • [🏗️ Architecture](#architecture) • [⚙️ Setup](#setup)
 
 </div>
 
@@ -167,8 +167,8 @@ customer_insight_agent/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/customer_insight_agent.git
-cd customer_insight_agent
+git clone https://github.com/abubakar1yousafzai/SmartSupport-AI
+cd SmartSupport-AI
 
 # 2. Install dependencies
 pip install -r requirements.txt
@@ -189,7 +189,7 @@ uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
 
 ## 📹 Video Demo
 
-[![Watch Demo](https://img.shields.io/badge/YouTube-Watch%20Demo-FF0000?style=for-the-badge&logo=youtube)](YOUR_YOUTUBE_LINK)
+[![Watch Demo](https://youtu.be/ayeYnI85OQI)](YOUR_YOUTUBE_LINK)
 
 ---
 
@@ -198,7 +198,7 @@ uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
 | Concept | Implementation |
 |---|---|
 | Multi-Agent System (ADK) | 6 specialized agents with orchestrator |
-| MCP Server | FastMCP with 6 tools |
+| MCP Server | FastMCP with 9 tools |
 | Security | API keys in .env, CORS, input validation |
 | Deployability | FastAPI + Uvicorn, one command setup |
 | Antigravity IDE | Used for development and agent building |
