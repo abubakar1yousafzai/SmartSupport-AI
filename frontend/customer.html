@@ -516,7 +516,7 @@
 
         // ── Session Management ──────────────────────────────────────────────────
         // A session groups all conversation turns for a single customer visit.
-        // The ID is persisted in localStorage so the session survives page
+        // The ID is persisted in sessionStorage so the session survives page
         // refreshes within the same browser.  A fresh session is created via
         // GET /api/session when none is found in storage.
 
@@ -525,14 +525,14 @@
 
         /**
          * Retrieves (or creates) a session ID.
-         *  1. Checks localStorage for an existing session.
+         *  1. Checks sessionStorage for an existing session.
          *  2. If not found, calls GET /api/session to generate a new one and
-         *     stores it in localStorage for future page loads.
+         *     stores it in sessionStorage for future page loads.
          * @returns {Promise<string>} The resolved session ID.
          */
         async function initSession() {
             // Re-use an existing session from a previous page load
-            let sessionId = localStorage.getItem('smartsupport_session');
+            let sessionId = sessionStorage.getItem('smartsupport_session');
 
             if (!sessionId) {
                 // No stored session – request a brand-new one from the server
@@ -540,7 +540,7 @@
                 const data = await response.json();
                 sessionId = data.session_id;
                 // Persist so the same session is reused on refresh
-                localStorage.setItem('smartsupport_session', sessionId);
+                sessionStorage.setItem('smartsupport_session', sessionId);
             }
 
             return sessionId;
