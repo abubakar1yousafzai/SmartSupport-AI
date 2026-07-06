@@ -189,7 +189,7 @@ uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload
 
 ## 📹 Video Demo
 
-[![Watch Demo](https://youtu.be/ayeYnI85OQI)](YOUR_YOUTUBE_LINK)
+[![Watch Demo](https://img.youtube.com/vi/ayeYnI85OQI/0.jpg)](https://youtu.be/ayeYnI85OQI)
 
 ---
 
